@@ -65,6 +65,41 @@
 
 ---
 
+## Phase 2 — 状态管理与任务管理 (2026-07-08)
+
+### Task 2.1: SQLite 状态管理
+- **状态**：已完成
+- **修改文件**：
+  - `src/state/__init__.py` — 包初始化
+  - `src/state/database.py` — Database 连接管理 (WAL mode, lazy connect, row_factory)
+  - `src/state/models.py` — 4 张表 DDL (tasks, execution_steps, tool_calls, api_keys)
+  - `src/state/manager.py` — StateManager CRUD 操作
+  - `tests/test_state.py` — 10 个测试用例
+- **测试结果**：10/10 通过
+- **实现要点**：
+  - UUID 主键 + 自动时间戳
+  - Task 状态: pending/running/success/failed/paused
+  - INSERT OR REPLACE 支持 API Key 更新
+
+### Task 2.2: Task Manager
+- **状态**：已完成
+- **修改文件**：
+  - `src/task/__init__.py` — 包初始化
+  - `src/task/manager.py` — TaskManager 高层封装
+  - `tests/test_task.py` — 8 个测试用例
+- **测试结果**：8/8 通过
+- **实现要点**：
+  - 创建任务自动分配 workspace 目录
+  - 生命周期: create → start → complete/fail/pause
+  - mark_step 自动编号步骤序号
+  - 委托 StateManager 处理持久化
+
+### 全量测试
+- **总计**：40/40 通过
+- **耗时**：0.51s
+
+---
+
 ## 下一步
 
 Phase 2：状态管理与 Task 管理（Task 2.1 SQLite, Task 2.2 Task Manager）

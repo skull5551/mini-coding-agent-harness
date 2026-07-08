@@ -1,3 +1,4 @@
+import os
 import pytest
 from src.task.manager import TaskManager
 
@@ -19,7 +20,6 @@ def test_create_task_creates_workspace(tmp_path):
     task_id = mgr.create_task("test")
     task = mgr.get_task(task_id)
     assert task["workspace_path"] is not None
-    import os
     assert os.path.isdir(task["workspace_path"])
 
 

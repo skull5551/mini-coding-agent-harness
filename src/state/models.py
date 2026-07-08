@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS tool_calls (
 );
 
 CREATE TABLE IF NOT EXISTS api_keys (
-    provider TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL UNIQUE,
     key_masked TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -13,12 +13,7 @@ class TaskManager:
         task_id = self.state.create_task(description, max_steps)
         workspace_path = os.path.join(self.base_workspace, task_id)
         os.makedirs(workspace_path, exist_ok=True)
-        conn = self.state.db.connect()
-        conn.execute(
-            "UPDATE tasks SET workspace_path = ? WHERE id = ?",
-            (workspace_path, task_id),
-        )
-        conn.commit()
+        self.state.update_task_workspace(task_id, workspace_path)
         return task_id
 
     def get_task(self, task_id: str) -> dict | None:
@@ -43,7 +38,6 @@ class TaskManager:
         return self.state.get_steps(task_id)
 
     def mark_step(self, task_id: str, action: str, input_summary: str = "", output_summary: str = "") -> str:
-        task = self.state.get_task(task_id)
         steps = self.state.get_steps(task_id)
         step_number = len(steps) + 1
         return self.state.create_step(task_id, step_number, action, input_summary, output_summary)

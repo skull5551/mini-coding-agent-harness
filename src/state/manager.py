@@ -38,6 +38,14 @@ class StateManager:
             return None
         return dict(row)
 
+    def update_task_workspace(self, task_id: str, workspace_path: str):
+        conn = self.db.connect()
+        conn.execute(
+            "UPDATE tasks SET workspace_path = ? WHERE id = ?",
+            (workspace_path, task_id),
+        )
+        conn.commit()
+
     def update_task_status(self, task_id: str, status: str):
         now = self._now()
         conn = self.db.connect()
@@ -97,10 +105,20 @@ class StateManager:
 
     def save_api_key(self, provider: str, key_masked: str):
         conn = self.db.connect()
-        conn.execute(
-            "INSERT OR REPLACE INTO api_keys (provider, key_masked) VALUES (?, ?)",
-            (provider, key_masked),
-        )
+        existing = conn.execute(
+            "SELECT id FROM api_keys WHERE provider = ?", (provider,)
+        ).fetchone()
+        if existing:
+            conn.execute(
+                "UPDATE api_keys SET key_masked = ? WHERE provider = ?",
+                (key_masked, provider),
+            )
+        else:
+            key_id = str(uuid.uuid4())
+            conn.execute(
+                "INSERT INTO api_keys (id, provider, key_masked) VALUES (?, ?, ?)",
+                (key_id, provider, key_masked),
+            )
         conn.commit()
 
     def get_api_keys(self) -> list[dict]:
