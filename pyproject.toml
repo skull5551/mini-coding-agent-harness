@@ -6,7 +6,6 @@ dependencies = [
     "fastapi>=0.100",
     "uvicorn>=0.20",
     "typer>=0.9",
-    "structlog>=23",
     "pydantic>=2.0",
 ]
 

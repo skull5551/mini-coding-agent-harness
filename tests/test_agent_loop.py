@@ -7,14 +7,7 @@ from src.llm.mock import MockLLMProvider
 from src.tools.registry import ToolRegistry
 from src.feedback.analyzer import FeedbackAnalyzer
 from src.task.manager import TaskManager
-
-
-def _make_ws(tmp_path, files: dict[str, str]):
-    for path, content in files.items():
-        p = tmp_path / path
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content)
-    return tmp_path
+from tests.conftest import make_ws as _make_ws
 
 
 def test_agent_decision_models():

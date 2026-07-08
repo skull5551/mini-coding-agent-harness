@@ -193,6 +193,47 @@
 
 ---
 
+## Phase 5 — 集成与部署 (2026-07-08)
+
+### Task 5.1: Docker 配置
+- **状态**：已完成
+- **修改文件**：
+  - `Dockerfile` — 修复 uvicorn 入口路径
+  - `docker-compose.yml` — 新建，端口 8000 + 环境变量注入
+  - `.dockerignore` — 新建，排除缓存/数据库/workspace
+  - `pyproject.toml` — 添加 dependencies + scripts
+  - `src/api/main.py` — 添加 module-level `app` 变量
+- **实现要点**：
+  - python:3.12-slim 基础镜像
+  - `pip install -e ".[dev]"` 安装开发依赖
+  - `uvicorn src.api.main:app --host 0.0.0.0 --port 8000`
+  - docker-compose 支持 HARNESS_API_KEY_* 环境变量
+
+### Task 5.2: 端到端集成测试
+- **状态**：已完成
+- **修改文件**：
+  - `tests/test_e2e.py` — 4 个测试
+- **测试结果**：4/4 通过
+- **测试覆盖**：
+  - `test_e2e_full_flow_bugfix` — Agent Loop 完整 bugfix 流程
+  - `test_e2e_task_through_api` — REST API 创建/查询/步骤
+  - `test_e2e_max_steps_termination` — 超步数终止
+  - `test_e2e_api_key_flow` — API Key 录入/掩码/删除
+
+### Task 5.3: 验收检查
+- **状态**：已完成
+- **修改文件**：
+  - `CHECKLIST.md` — 全部 40+ 项标记状态
+  - `README.md` — 新建完整 README
+  - `.github/workflows/ci.yml` — 新建 CI 配置
+- **验收结果**：D1-D7(除D7) 完成，C1-C11 全部完成，S1-S4 全部完成，K1-K5 全部完成，W1-W5 全部完成，L1-L4 全部完成，T1-T7 全部完成，E1-E4 全部完成
+
+### 全量测试
+- **总计**：75/75 通过
+- **耗时**：6.94s
+
+---
+
 ## 下一步
 
 Phase 2：状态管理与 Task 管理（Task 2.1 SQLite, Task 2.2 Task Manager）
