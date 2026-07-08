@@ -100,6 +100,37 @@
 
 ---
 
+## Phase 3 — Agent Loop 核心 (2026-07-08)
+
+### Task 3.1: Agent Loop 基础实现
+- **状态**：已完成
+- **修改文件**：
+  - `src/agent/__init__.py` — 包初始化
+  - `src/agent/models.py` — `AgentDecision`, `AgentResult` 数据类
+  - `src/agent/loop.py` — `AgentLoop` 核心实现
+  - `tests/test_agent_loop.py` — 7 个测试用例
+- **测试结果**：7/7 通过
+- **实现要点**：
+  - 状态机：IDLE → RUNNING → (DECIDE → ACT → OBSERVE)ⁿ → SUCCESS/FAILED
+  - DECIDE：调用 LLM → 解析 JSON 响应为 AgentDecision
+  - ACT：通过 ToolRegistry 查找工具 → 异步执行 → 收集结果
+  - OBSERVE：FeedbackAnalyzer 分析 → 结构化反馈注入下一轮消息
+  - 终止条件：Agent 主动完成(done) / 主动放弃(failed) / 超步数限制(failed)
+  - 自动构建 system prompt + 消息历史管理
+  - 无效工具优雅降级（记录错误 + 继续循环）
+- **测试覆盖**：
+  - `test_agent_loop_complete_flow` — 完整流程 read → write → test → done
+  - `test_agent_loop_max_steps` — 20 步后自动终止
+  - `test_agent_loop_explicit_fail` — Agent 显式失败
+  - `test_agent_loop_records_steps` — 步骤记录到数据库
+  - `test_agent_loop_invalid_tool_rejected` — 无效工具不崩溃
+
+### 全量测试
+- **总计**：47/47 通过
+- **耗时**：3.00s
+
+---
+
 ## 下一步
 
 Phase 2：状态管理与 Task 管理（Task 2.1 SQLite, Task 2.2 Task Manager）
