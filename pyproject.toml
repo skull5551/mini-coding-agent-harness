@@ -2,6 +2,27 @@
 name = "mini-coding-agent"
 version = "0.1.0"
 requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.100",
+    "uvicorn>=0.20",
+    "typer>=0.9",
+    "structlog>=23",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+]
+llm = [
+    "litellm>=1.0",
+]
+
+[project.scripts]
+agent-harness = "src.cli.main:app"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

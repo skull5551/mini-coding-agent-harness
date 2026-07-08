@@ -1,0 +1,11 @@
+services:
+  harness:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - HARNESS_API_KEY_OPENAI=${HARNESS_API_KEY_OPENAI:-}
+      - HARNESS_API_KEY_ANTHROPIC=${HARNESS_API_KEY_ANTHROPIC:-}
+    volumes:
+      - ./harness.db:/app/harness.db
+      - ./workspaces:/app/workspaces

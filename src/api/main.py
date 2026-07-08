@@ -24,3 +24,6 @@ def create_app(db_path: str = "harness.db", base_workspace: str = "workspaces") 
     app.include_router(config.router)
 
     return app
+
+
+app = create_app()
