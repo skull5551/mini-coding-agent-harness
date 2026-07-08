@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     id TEXT PRIMARY KEY,
     provider TEXT NOT NULL UNIQUE,
     key_masked TEXT NOT NULL,
+    key_value TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """

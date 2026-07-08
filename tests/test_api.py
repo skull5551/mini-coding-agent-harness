@@ -65,7 +65,9 @@ def test_save_and_get_api_key(client):
     keys = get_resp.json()
     assert len(keys) == 1
     assert keys[0]["provider"] == "openai"
-    assert keys[0]["key_masked"] == "sk-secret-12345"
+    assert keys[0]["key_masked"] != "sk-secret-12345"
+    assert "****" in keys[0]["key_masked"]
+    assert "key_value" not in keys[0]
 
 
 def test_delete_api_key(client):

@@ -22,7 +22,6 @@ def test_cli_run(runner):
 
 def test_cli_status(runner):
     r, db, ws = runner
-    import json
     create = r.invoke(app, ["--db", db, "--workspace", ws, "run", "test task"])
     task_id = json.loads(create.stdout)["task_id"]
     result = r.invoke(app, ["--db", db, "--workspace", ws, "status", task_id])
@@ -39,8 +38,16 @@ def test_cli_status_not_found(runner):
 
 def test_cli_config_set_key(runner):
     r, db, ws = runner
-    result = r.invoke(app, ["--db", db, "--workspace", ws, "config", "set-key", "openai", "sk-test"])
-    assert result.exit_code == 0
+    from src.cli.main import set_key
+    set_key(provider="openai", key="sk-test-12345", db=db, workspace=ws)
+    from src.state.manager import StateManager
+    sm = StateManager(db)
+    keys = sm.get_api_keys()
+    assert len(keys) == 1
+    assert keys[0]["provider"] == "openai"
+    assert "****" in keys[0]["key_masked"]
+    raw = sm.get_api_key("openai")
+    assert raw == "sk-test-12345"
 
 
 def test_cli_config_list_keys(runner):

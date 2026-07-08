@@ -10,8 +10,7 @@ app.add_typer(config_app, name="config")
 
 def _resolve(db: str, workspace: str) -> tuple[TaskManager, StateManager]:
     tm = TaskManager(db, base_workspace=workspace)
-    sm = StateManager(db)
-    return tm, sm
+    return tm, tm.state
 
 
 @app.callback()
@@ -55,6 +54,10 @@ def logs(
     workspace: str = typer.Option("workspaces", "--workspace", hidden=True),
 ):
     tm, _ = _resolve(db, workspace)
+    task = tm.get_task(task_id)
+    if task is None:
+        typer.echo(f"task not found: {task_id}", err=True)
+        raise typer.Exit(code=1)
     steps = tm.get_steps(task_id)
     typer.echo(json.dumps(steps, default=str))
 

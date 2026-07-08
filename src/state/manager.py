@@ -103,27 +103,43 @@ class StateManager:
 
     # --- ApiKey CRUD ---
 
-    def save_api_key(self, provider: str, key_masked: str):
+    @staticmethod
+    def _mask_key(raw_key: str) -> str:
+        if len(raw_key) <= 8:
+            return raw_key
+        return raw_key[:3] + "****" + raw_key[-4:]
+
+    def save_api_key(self, provider: str, raw_key: str):
+        masked = self._mask_key(raw_key)
         conn = self.db.connect()
         existing = conn.execute(
             "SELECT id FROM api_keys WHERE provider = ?", (provider,)
         ).fetchone()
         if existing:
             conn.execute(
-                "UPDATE api_keys SET key_masked = ? WHERE provider = ?",
-                (key_masked, provider),
+                "UPDATE api_keys SET key_masked = ?, key_value = ? WHERE provider = ?",
+                (masked, raw_key, provider),
             )
         else:
             key_id = str(uuid.uuid4())
             conn.execute(
-                "INSERT INTO api_keys (id, provider, key_masked) VALUES (?, ?, ?)",
-                (key_id, provider, key_masked),
+                "INSERT INTO api_keys (id, provider, key_masked, key_value) VALUES (?, ?, ?, ?)",
+                (key_id, provider, masked, raw_key),
             )
         conn.commit()
 
+    def get_api_key(self, provider: str) -> str | None:
+        conn = self.db.connect()
+        row = conn.execute(
+            "SELECT key_value FROM api_keys WHERE provider = ?", (provider,)
+        ).fetchone()
+        return row["key_value"] if row else None
+
     def get_api_keys(self) -> list[dict]:
         conn = self.db.connect()
-        rows = conn.execute("SELECT * FROM api_keys").fetchall()
+        rows = conn.execute(
+            "SELECT id, provider, key_masked, created_at FROM api_keys ORDER BY created_at"
+        ).fetchall()
         return [dict(r) for r in rows]
 
     def delete_api_key(self, provider: str):

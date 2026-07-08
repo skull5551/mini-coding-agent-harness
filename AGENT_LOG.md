@@ -159,6 +159,40 @@
 
 ---
 
+## Phase 4 — Web UI + CLI (2026-07-08)
+
+### Task 4.1: FastAPI 后端 + REST API
+- **状态**：已完成
+- **修改文件**：
+  - `src/api/main.py` — create_app() 工厂函数
+  - `src/api/routes/tasks.py` — POST/GET /api/tasks, GET /api/tasks/{id}/steps
+  - `src/api/routes/config.py` — POST/GET/DELETE /api/config/keys
+  - `tests/test_api.py` — 8 个测试
+  - `src/state/database.py` — 修复跨线程 SQLite (check_same_thread=False)
+- **测试结果**：8/8 通过
+- **实现要点**：
+  - `create_app(db_path, base_workspace)` 工厂模式，支持测试注入
+  - CORS 中间件，允许所有来源
+  - Pydantic 请求体验证（422 自动处理）
+
+### Task 4.3: CLI (Typer)
+- **状态**：已完成
+- **修改文件**：
+  - `src/cli/main.py` — Typer app with 4 个子命令
+  - `tests/test_cli.py` — 6 个测试
+- **测试结果**：6/6 通过
+- **实现要点**：
+  - `--db` / `--workspace` 全局选项
+  - `run`, `status`, `logs`, `config set-key`, `config list-keys`
+  - JSON 格式输出
+  - CliRunner 测试
+
+### 全量测试
+- **总计**：71/71 通过
+- **耗时**：6.64s
+
+---
+
 ## 下一步
 
 Phase 2：状态管理与 Task 管理（Task 2.1 SQLite, Task 2.2 Task Manager）
