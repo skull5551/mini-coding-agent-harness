@@ -131,6 +131,34 @@
 
 ---
 
+## Phase 3 — Agent Loop 核心 (2026-07-08)
+
+### Task 3.1: Agent Loop 基础实现
+- **状态**：已完成
+- **修改文件**：
+  - `src/agent/__init__.py`, `src/agent/models.py`, `src/agent/loop.py`
+  - `tests/test_agent_loop.py` — 7 个测试
+- **测试结果**：7/7 通过
+- **实现要点**：状态机 (DECIDE → ACT → OBSERVE)ⁿ，JSON 解析，ToolRegistry 调用，Feedback 注入，步数记录
+
+### Task 3.2: LiteLLM Provider (真实 LLM)
+- **状态**：已完成
+- **修改文件**：
+  - `src/llm/litellm_provider.py` — `LiteLLMProvider`
+  - `tests/test_litellm_provider.py` — 8 个测试
+- **测试结果**：8/8 通过
+- **实现要点**：
+  - 基于 litellm 的 `completion()` 调用
+  - 支持自定义 model（如 `anthropic/claude-3-haiku`）
+  - 优雅降级：litellm 未安装时抛出明确 RuntimeError
+  - 所有测试通过 `unittest.mock.patch` 模拟，不依赖真实 API
+
+### 全量测试
+- **总计**：55/55 通过
+- **耗时**：13.55s
+
+---
+
 ## 下一步
 
 Phase 2：状态管理与 Task 管理（Task 2.1 SQLite, Task 2.2 Task Manager）

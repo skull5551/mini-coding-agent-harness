@@ -134,3 +134,41 @@ async def test_agent_loop_invalid_tool_rejected(tmp_path):
     task_id = task_mgr.create_task("test")
     result = await loop.run(task_id, max_steps=10)
     assert result.status == "success"
+
+
+async def test_agent_loop_retry_on_malformed_json(tmp_path):
+    ws = _make_ws(tmp_path, {"main.py": "x = 1"})
+    responses = [
+        "not valid json",
+        json.dumps({"action": "done", "reason": "recovered"}),
+    ]
+    db_path = tmp_path / "test.db"
+    task_mgr = TaskManager(str(db_path), base_workspace=str(ws))
+    loop = AgentLoop(
+        llm=MockLLMProvider(responses=responses),
+        tool_registry=ToolRegistry(workspace=str(ws)),
+        feedback_analyzer=FeedbackAnalyzer(),
+        task_mgr=task_mgr,
+    )
+    task_id = task_mgr.create_task("test")
+    result = await loop.run(task_id, max_steps=10)
+    assert result.status == "success"
+
+
+async def test_agent_loop_retry_on_unknown_action(tmp_path):
+    ws = _make_ws(tmp_path, {"main.py": "x = 1"})
+    responses = [
+        json.dumps({"action": "unknown_action_xyz"}),
+        json.dumps({"action": "done", "reason": "recovered"}),
+    ]
+    db_path = tmp_path / "test.db"
+    task_mgr = TaskManager(str(db_path), base_workspace=str(ws))
+    loop = AgentLoop(
+        llm=MockLLMProvider(responses=responses),
+        tool_registry=ToolRegistry(workspace=str(ws)),
+        feedback_analyzer=FeedbackAnalyzer(),
+        task_mgr=task_mgr,
+    )
+    task_id = task_mgr.create_task("test")
+    result = await loop.run(task_id, max_steps=10)
+    assert result.status == "success"

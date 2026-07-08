@@ -15,7 +15,8 @@ class LiteLLMProvider(LLMProvider):
     def chat(self, messages: list) -> str:
         if not HAS_LITELLM:
             raise RuntimeError(
-                "litellm is not installed. Run: pip install litellm"
+                "litellm is required but not available. "
+                "Install it with: pip install 'litellm'"
             )
         response = litellm.completion(
             model=self.model,

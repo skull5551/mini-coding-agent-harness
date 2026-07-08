@@ -1,5 +1,5 @@
+import asyncio
 import json
-import logging
 
 from src.agent.models import AgentDecision, AgentResult
 from src.feedback.analyzer import FeedbackAnalyzer
@@ -7,7 +7,7 @@ from src.llm.base import LLMProvider
 from src.task.manager import TaskManager
 from src.tools.registry import ToolRegistry
 
-logger = logging.getLogger(__name__)
+_LLM_TIMEOUT = 60
 
 
 class AgentLoop:
@@ -34,11 +34,11 @@ class AgentLoop:
             + '{"action": "failed", "reason": "..."}'
         )
 
-    def _parse_decision(self, response: str) -> AgentDecision:
+    def _parse_decision(self, response: str) -> AgentDecision | None:
         try:
             data = json.loads(response)
         except json.JSONDecodeError:
-            return AgentDecision(action="failed", reason="invalid JSON from LLM")
+            return None
         action = data.get("action", "")
         if action == "tool_call":
             return AgentDecision(
@@ -50,7 +50,7 @@ class AgentLoop:
             return AgentDecision(action="done", reason=data.get("reason", ""))
         if action == "failed":
             return AgentDecision(action="failed", reason=data.get("reason", ""))
-        return AgentDecision(action="failed", reason=f"unknown action: {action}")
+        return None
 
     async def run(self, task_id: str, max_steps: int = 20) -> AgentResult:
         task = self.task_mgr.get_task(task_id)
@@ -65,11 +65,22 @@ class AgentLoop:
 
         for step in range(1, max_steps + 1):
             try:
-                response = self.llm.chat(messages)
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(self.llm.chat, messages),
+                    timeout=_LLM_TIMEOUT,
+                )
             except StopIteration:
                 return AgentResult(task_id=task_id, status="failed", total_steps=step - 1, final_message="LLM exhausted")
+            except asyncio.TimeoutError:
+                self.task_mgr.fail_task(task_id)
+                return AgentResult(task_id=task_id, status="failed", total_steps=step, final_message="LLM timed out")
 
             decision = self._parse_decision(response)
+
+            if decision is None:
+                messages.append({"role": "assistant", "content": response})
+                messages.append({"role": "user", "content": "Invalid response format. Respond with valid JSON: {\"action\": \"tool_call\"|\"done\"|\"failed\", ...}"})
+                continue
 
             if decision.action == "done":
                 self.task_mgr.complete_task(task_id)
@@ -96,7 +107,7 @@ class AgentLoop:
                     task_id,
                     action=decision.tool,
                     input_summary=str(decision.params),
-                    output_summary=result.stdout[:200] + result.stderr[:200],
+                    output_summary=result.stdout[:200] + "|STDERR|" + result.stderr[:200],
                 )
 
                 messages.append({"role": "assistant", "content": response})
