@@ -4,6 +4,7 @@ try:
     import litellm
     HAS_LITELLM = True
 except ImportError:
+    litellm = None  # type: ignore
     HAS_LITELLM = False
 
 
