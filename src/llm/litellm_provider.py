@@ -14,7 +14,7 @@ class LiteLLMProvider(LLMProvider):
         self.api_key = api_key
 
     def chat(self, messages: list) -> str:
-        if not HAS_LITELLM:
+        if litellm is None:
             raise RuntimeError(
                 "litellm is required but not available. "
                 "Install it with: pip install 'litellm'"
