@@ -244,7 +244,7 @@ Brainstorming 技能有效地将模糊的 "Coding Agent Harness" 概念转化为
 
 ---
 
-## 补充：SPEC/PLAN 可行性评审（2026-07-08）
+## SPEC/PLAN 冷启动验证（2026-07-08）
 
 在开始实现前，TREA SOLO对现有设计进行工程可行性评估。
 
