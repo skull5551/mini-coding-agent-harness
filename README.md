@@ -47,6 +47,49 @@ docker compose up -d
 pytest tests/
 ```
 
+## Demo 演示
+
+一键运行 Harness 核心机制演示（不调用真实 LLM）：
+
+```bash
+python demo/agent_loop_demo.py
+```
+
+输出示例：
+
+```
+==================================================
+  Coding Agent Harness — Mechanism Demo
+==================================================
+
+Task: 544b9a64-...
+      fix add function bug
+
+Step 1:
+  LLM Decision: read_file
+  Params:       {"path": "main.py"}
+  Tool Result:  success
+
+Step 2:
+  LLM Decision: write_file
+  Params:       {"path": "main.py", "content": "def add(a, b):\n    return a + b\n"}
+  Tool Result:  success
+
+Step 3:
+  LLM Decision: run_test
+  Params:       {"command": "pytest .../test_main.py"}
+  Tool Result:  success
+
+Step 4:
+  LLM Decision: done
+  Reason:       bug fixed
+
+==================================================
+  Final Result: SUCCESS
+  Total Steps:  4
+==================================================
+```
+
 ## 技术栈
 
 - Python 3.12 + FastAPI + Typer
