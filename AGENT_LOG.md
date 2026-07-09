@@ -125,22 +125,6 @@
   - `test_agent_loop_records_steps` — 步骤记录到数据库
   - `test_agent_loop_invalid_tool_rejected` — 无效工具不崩溃
 
-### 全量测试
-- **总计**：47/47 通过
-- **耗时**：3.00s
-
----
-
-## Phase 3 — Agent Loop 核心 (2026-07-08)
-
-### Task 3.1: Agent Loop 基础实现
-- **状态**：已完成
-- **修改文件**：
-  - `src/agent/__init__.py`, `src/agent/models.py`, `src/agent/loop.py`
-  - `tests/test_agent_loop.py` — 7 个测试
-- **测试结果**：7/7 通过
-- **实现要点**：状态机 (DECIDE → ACT → OBSERVE)ⁿ，JSON 解析，ToolRegistry 调用，Feedback 注入，步数记录
-
 ### Task 3.2: LiteLLM Provider (真实 LLM)
 - **状态**：已完成
 - **修改文件**：
@@ -229,11 +213,43 @@
 - **验收结果**：D1-D7(除D7) 完成，C1-C11 全部完成，S1-S4 全部完成，K1-K5 全部完成，W1-W5 全部完成，L1-L4 全部完成，T1-T7 全部完成，E1-E4 全部完成
 
 ### 全量测试
-- **总计**：75/75 通过
-- **耗时**：6.94s
+- **总计**：76/76 通过
+- **耗时**：6.03s
 
 ---
 
-## 下一步
+## Phase 5+ — 反馈闭环验证与文档修复 (2026-07-09)
 
-Phase 2：状态管理与 Task 管理（Task 2.1 SQLite, Task 2.2 Task Manager）
+### Code Review 修复 (第 4 轮)
+- **状态**：已完成
+- **修改文件**：
+  - `src/llm/mock.py` — 新增 `call_history` 字段记录每次 LLM 调用，用于测试验证 feedback 注入
+  - `src/feedback/analyzer.py` — 修复：合并 stdout+stderr 检查（Windows 上 pytest 输出到 stdout），detail 取尾部 500 字符
+- **测试结果**：全部通过
+
+### 反馈闭环验证测试
+- **状态**：已完成
+- **修改文件**：
+  - `tests/test_agent_loop.py` — 新增 `test_agent_loop_feedback_injection_after_tool_failure`
+- **测试结果**：76/76 通过
+- **实现要点**：
+  - 模拟 Tool 失败 → FeedbackAnalyzer 生成结构化反馈 → 注入 LLM context → Agent 恢复
+  - 通过 `MockLLMProvider.call_history` 验证反馈消息确实被注入到 LLM 调用中
+
+### 机制演示脚本
+- **状态**：已完成
+- **修改文件**：
+  - `demo/agent_loop_demo.py` — 一键运行 demo，使用 MockLLMProvider 模拟自动修复 bug 场景
+- **实现要点**：不调用真实 LLM，展示完整的 DECIDE → ACT → OBSERVE 循环
+
+### 文档修复 (最终审查)
+- **状态**：已完成
+- **修改文件**：
+  - `REFLECTION.md` — 补充课程反思 (约 2000 字)
+  - `AGENT_LOG.md` — 清理重复条目，删除残留文本，更新测试数量，修复编码
+  - `CHECKLIST.md` — 同步测试数量 75→76
+  - `README.md` — 补充架构模块说明、Docker 部署、API Key 安全、测试覆盖、Demo 使用说明
+
+### 全量测试
+- **总计**：76/76 通过
+- **耗时**：5.60s
