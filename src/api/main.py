@@ -16,8 +16,8 @@ def create_app(db_path: str = "harness.db", base_workspace: str = "workspaces") 
     app = FastAPI(title="Mini Coding Agent Harness")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
+        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+        allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["*"],
     )
     app.include_router(tasks.router)

@@ -7,25 +7,20 @@ app = typer.Typer()
 config_app = typer.Typer()
 app.add_typer(config_app, name="config")
 
+_DB_OPTION = typer.Option("harness.db", "--db", help="SQLite database path")
+_WS_OPTION = typer.Option("workspaces", "--workspace", help="Base workspace directory")
+
 
 def _resolve(db: str, workspace: str) -> tuple[TaskManager, StateManager]:
     tm = TaskManager(db, base_workspace=workspace)
     return tm, tm.state
 
 
-@app.callback()
-def main(
-    db: str = typer.Option("harness.db", "--db", help="SQLite database path"),
-    workspace: str = typer.Option("workspaces", "--workspace", help="Base workspace directory"),
-):
-    pass
-
-
 @app.command()
 def run(
     description: str,
-    db: str = typer.Option("harness.db", "--db", hidden=True),
-    workspace: str = typer.Option("workspaces", "--workspace", hidden=True),
+    db: str = _DB_OPTION,
+    workspace: str = _WS_OPTION,
 ):
     tm, _ = _resolve(db, workspace)
     task_id = tm.create_task(description)
@@ -36,8 +31,8 @@ def run(
 @app.command()
 def status(
     task_id: str,
-    db: str = typer.Option("harness.db", "--db", hidden=True),
-    workspace: str = typer.Option("workspaces", "--workspace", hidden=True),
+    db: str = _DB_OPTION,
+    workspace: str = _WS_OPTION,
 ):
     tm, _ = _resolve(db, workspace)
     task = tm.get_task(task_id)
@@ -50,8 +45,8 @@ def status(
 @app.command()
 def logs(
     task_id: str,
-    db: str = typer.Option("harness.db", "--db", hidden=True),
-    workspace: str = typer.Option("workspaces", "--workspace", hidden=True),
+    db: str = _DB_OPTION,
+    workspace: str = _WS_OPTION,
 ):
     tm, _ = _resolve(db, workspace)
     task = tm.get_task(task_id)
@@ -65,9 +60,9 @@ def logs(
 @config_app.command()
 def set_key(
     provider: str,
-    key: str,
-    db: str = typer.Option("harness.db", "--db", hidden=True),
-    workspace: str = typer.Option("workspaces", "--workspace", hidden=True),
+    key: str = typer.Option(..., "--key", prompt=True, hide_input=True, help="API key (hidden input)"),
+    db: str = _DB_OPTION,
+    workspace: str = _WS_OPTION,
 ):
     _, sm = _resolve(db, workspace)
     sm.save_api_key(provider, key)
@@ -76,8 +71,8 @@ def set_key(
 
 @config_app.command(name="list-keys")
 def list_keys(
-    db: str = typer.Option("harness.db", "--db", hidden=True),
-    workspace: str = typer.Option("workspaces", "--workspace", hidden=True),
+    db: str = _DB_OPTION,
+    workspace: str = _WS_OPTION,
 ):
     _, sm = _resolve(db, workspace)
     keys = sm.get_api_keys()

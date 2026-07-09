@@ -63,7 +63,7 @@
 
 | # | 验收项 | 状态 | 备注 |
 |---|--------|------|------|
-| L1 | `agent-harness run <description>` 可创建任务 | ✅ | 6 个测试 |
+| L1 | `agent-harness run <description>` 可创建任务 | ✅ | 7 个 CLI 测试 |
 | L2 | `agent-harness status <task_id>` 可查询状态 | ✅ | |
 | L3 | `agent-harness logs <task_id>` 可查看日志 | ✅ | |
 | L4 | `agent-harness --help` 显示帮助信息 | ✅ | |
@@ -72,11 +72,11 @@
 
 | # | 验收项 | 状态 | 备注 |
 |---|--------|------|------|
-| T1 | pytest 可运行，全部测试通过 | ✅ | 76/76 passed |
-| T2 | Mock LLM 单元测试覆盖所有 Agent Loop 核心场景 | ✅ | 9 个 Agent Loop 测试 |
+| T1 | pytest 可运行，全部测试通过 | ✅ | 80/80 passed |
+| T2 | Mock LLM 单元测试覆盖所有 Agent Loop 核心场景 | ✅ | 12 个 Agent Loop 测试 |
 | T3 | Tool 单元测试覆盖读写文件和命令执行 | ✅ | 11 个 Tool 测试 |
 | T4 | Feedback Analyzer 单元测试覆盖成功/失败 | ✅ | 6 个 Feedback 测试 |
-| T5 | 状态管理单元测试覆盖 CRUD | ✅ | 10 个 State 测试 |
+| T5 | 状态管理单元测试覆盖 CRUD | ✅ | 11 个 State 测试 |
 | T6 | API 集成测试覆盖主要端点 | ✅ | 8 个 API 测试 |
 | T7 | Mock LLM 测试结果可重复（三次运行一致） | ✅ | 确定性 Mock 响应 |
 

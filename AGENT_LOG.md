@@ -253,3 +253,38 @@
 ### 全量测试
 - **总计**：76/76 通过
 - **耗时**：5.60s
+
+---
+
+## Final Security and Quality Fixes (2026-07-09)
+
+### 代码审查修复 (Critical + Major)
+
+| # | 问题 | 修复 |
+|---|------|------|
+| CR1 | Agent Loop `tool.execute()` 无异常保护 | 新增 try/except，异常转 ToolResult + feedback，Agent 继续运行 |
+| CS1 | API Key 明文存储 SQLite | XOR + base64 加密存储，密钥来自 `HARNESS_SECRET_KEY` 环境变量 |
+| CS2 | CLI `set-key` 将 Key 暴露在进程参数中 | 改为 `typer.Option(prompt=True, hide_input=True)` 隐藏输入 |
+| MR1 | 消息截断长度不一致（200 vs 500） | 统一为 `_MAX_MESSAGE_LENGTH = 500` 常量 |
+| MR2 | `messages` 列表无界增长 | 新增 `_trim_history()` 函数，保留 system prompt + 最近 10 轮 |
+| MS1 | CORS 全开放 | 限制为 `localhost:3000`，方法限制为 GET/POST/DELETE |
+| ME2 | Docker 未安装 litellm | `pip install -e ".[dev,llm]"` 包含 litellm 依赖 |
+| ME4 | `.gitignore` 缺少项目 artifacts | 新增 `workspaces/` 和 `.uploads/` 排除规则 |
+
+### 修改文件
+- `src/agent/loop.py` — 异常保护 + 消息截断 + 历史管理
+- `src/state/manager.py` — XOR 加密/解密 API Key
+- `src/cli/main.py` — 隐藏输入 + 修复 `--db`/`--workspace` 传递
+- `src/api/main.py` — CORS 限制
+- `Dockerfile` — 添加 litellm 依赖
+- `.gitignore` — 新增排除规则
+
+### 新增测试
+- `test_agent_loop_handles_tool_exception` — 模拟 RuntimeError 工具，验证 Agent 不崩溃
+- `test_api_key_encrypted_in_db` — 验证 DB 中不包含原始 Key
+- `test_cli_config_set_key_hidden_input` — 验证隐藏输入流程
+- `test_agent_loop_trims_message_history` — 验证 20 步后消息不超限
+
+### 全量测试
+- **总计**：80/80 通过
+- **耗时**：10.30s

@@ -89,7 +89,7 @@ docker run -p 8000:8000 -e HARNESS_API_KEY_OPENAI=sk-xxx mini-coding-agent
 - **录入**：`POST /api/config/keys` 或 `agent-harness config set-key openai sk-xxx`
 - **查看**：`GET /api/config/keys` 仅返回掩码格式（如 `sk-****abcd`），不返回完整 Key
 - **删除**：`DELETE /api/config/keys/{provider}` 或通过 Web UI 删除
-- **存储**：完整 Key 存储在 `key_value` 字段，API 接口只暴露 `key_masked` 字段
+- **存储**：完整 Key 加密存储，API 接口只暴露 `key_masked` 字段
 
 ## 测试
 
@@ -97,7 +97,7 @@ docker run -p 8000:8000 -e HARNESS_API_KEY_OPENAI=sk-xxx mini-coding-agent
 pytest tests/
 ```
 
-当前测试结果：**76/76 全部通过**
+当前测试结果：**80/80 全部通过**
 
 ### 测试覆盖
 
@@ -106,12 +106,12 @@ pytest tests/
 | `test_llm.py` | 5 | MockLLMProvider 预设响应、抽象接口 |
 | `test_tools.py` | 11 | 文件读写、命令执行、路径遍历防护、ToolRegistry |
 | `test_feedback.py` | 6 | FeedbackAnalyzer 成功/失败/超时分类 |
-| `test_state.py` | 10 | SQLite CRUD、Task/Step/ToolCall/ApiKey |
+| `test_state.py` | 11 | SQLite CRUD、Task/Step/ToolCall/ApiKey、加密存储验证 |
 | `test_task.py` | 8 | TaskManager 生命周期、workspace 管理 |
-| `test_agent_loop.py` | 10 | Agent Loop 完整流程、超步数终止、错误恢复、反馈闭环 |
+| `test_agent_loop.py` | 12 | Agent Loop 完整流程、超步数终止、错误恢复、反馈闭环、工具异常保护、消息截断 |
 | `test_litellm_provider.py` | 8 | LiteLLMProvider Mock 测试 |
 | `test_api.py` | 8 | FastAPI REST 端点集成测试 |
-| `test_cli.py` | 6 | Typer CLI 命令测试 |
+| `test_cli.py` | 7 | Typer CLI 命令测试、隐藏输入验证 |
 | `test_e2e.py` | 4 | 端到端：Agent Loop + API + 反馈闭环 |
 
 ### Mock LLM 测试

@@ -46,3 +46,7 @@ logs/
 
 # Docker
 .dockerignore
+
+# Project artifacts
+workspaces/
+.uploads/

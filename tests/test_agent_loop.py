@@ -211,3 +211,64 @@ async def test_agent_loop_feedback_injection_after_tool_failure(tmp_path):
     assert feedback["error_type"] == "test_failure"
     assert "test_add" in feedback["detail"] or "test_add" in feedback["stdout"]
     assert "AssertionError" in feedback["detail"] or "AssertionError" in feedback["stderr"]
+
+
+async def test_agent_loop_handles_tool_exception(tmp_path):
+    ws = _make_ws(tmp_path, {"main.py": "x = 1"})
+
+    class _BrokenTool:
+        def __init__(self, workspace):
+            self.workspace = workspace
+
+        async def execute(self, params):
+            raise RuntimeError("simulated tool crash")
+
+    responses = [
+        json.dumps({"action": "tool_call", "tool": "broken_tool", "params": {"x": 1}}),
+        json.dumps({"action": "done", "reason": "recovered after tool error"}),
+    ]
+
+    db_path = str(tmp_path / "test.db")
+    task_mgr = TaskManager(db_path, base_workspace=str(ws))
+    registry = ToolRegistry(workspace=str(ws))
+    registry.register("broken_tool", _BrokenTool(workspace=str(ws)))
+
+    loop = AgentLoop(
+        llm=MockLLMProvider(responses=responses),
+        tool_registry=registry,
+        feedback_analyzer=FeedbackAnalyzer(),
+        task_mgr=task_mgr,
+    )
+
+    task_id = task_mgr.create_task("test broken tool")
+    result = await loop.run(task_id, max_steps=10)
+
+    assert result.status == "success"
+    assert result.total_steps == 2
+
+    steps = task_mgr.get_steps(task_id)
+    assert len(steps) >= 1
+    assert "exception" in steps[0]["output_summary"]
+
+
+async def test_agent_loop_trims_message_history(tmp_path):
+    ws = _make_ws(tmp_path, {"main.py": "x = 1"})
+    responses = [
+        json.dumps({"action": "tool_call", "tool": "read_file", "params": {"path": "main.py"}})
+    ] * 25
+    db_path = str(tmp_path / "test.db")
+    task_mgr = TaskManager(db_path, base_workspace=str(ws))
+    mock_llm = MockLLMProvider(responses=responses)
+    loop = AgentLoop(
+        llm=mock_llm,
+        tool_registry=ToolRegistry(workspace=str(ws)),
+        feedback_analyzer=FeedbackAnalyzer(),
+        task_mgr=task_mgr,
+    )
+    task_id = task_mgr.create_task("test")
+    await loop.run(task_id, max_steps=20)
+
+    assert len(mock_llm.call_history) >= 15
+    for call_msgs in mock_llm.call_history[10:]:
+        non_system = [m for m in call_msgs if m["role"] != "system"]
+        assert len(non_system) <= 22

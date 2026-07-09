@@ -1,13 +1,25 @@
 import asyncio
 import json
+import traceback
 
 from src.agent.models import AgentDecision, AgentResult
 from src.feedback.analyzer import FeedbackAnalyzer
 from src.llm.base import LLMProvider
 from src.task.manager import TaskManager
+from src.tools.base import ToolResult
 from src.tools.registry import ToolRegistry
 
 _LLM_TIMEOUT = 60
+_MAX_MESSAGE_LENGTH = 500
+_MAX_HISTORY_TURNS = 10
+
+
+def _trim_history(messages: list[dict], max_turns: int):
+    system_msgs = [m for m in messages if m["role"] == "system"]
+    user_assistant = [m for m in messages if m["role"] != "system"]
+    if len(user_assistant) > max_turns * 2:
+        user_assistant = user_assistant[-(max_turns * 2):]
+    messages[:] = system_msgs + user_assistant
 
 
 class AgentLoop:
@@ -100,15 +112,28 @@ class AgentLoop:
                     self.task_mgr.mark_step(task_id, action=decision.tool, input_summary=str(decision.params), output_summary=error_msg)
                     continue
 
-                result = await tool.execute(decision.params)
-                feedback = self.feedback_analyzer.analyze(result)
+                try:
+                    result = await tool.execute(decision.params)
+                except Exception as exc:
+                    result = ToolResult(
+                        stderr=f"tool internal error: {type(exc).__name__}",
+                        exit_code=1,
+                    )
+                    self.task_mgr.mark_step(
+                        task_id,
+                        action=decision.tool,
+                        input_summary=str(decision.params),
+                        output_summary=f"exception: {type(exc).__name__}",
+                    )
+                else:
+                    self.task_mgr.mark_step(
+                        task_id,
+                        action=decision.tool,
+                        input_summary=str(decision.params),
+                        output_summary=result.stdout[:_MAX_MESSAGE_LENGTH] + "|STDERR|" + result.stderr[:_MAX_MESSAGE_LENGTH],
+                    )
 
-                self.task_mgr.mark_step(
-                    task_id,
-                    action=decision.tool,
-                    input_summary=str(decision.params),
-                    output_summary=result.stdout[:200] + "|STDERR|" + result.stderr[:200],
-                )
+                feedback = self.feedback_analyzer.analyze(result)
 
                 messages.append({"role": "assistant", "content": response})
                 messages.append({
@@ -117,10 +142,12 @@ class AgentLoop:
                         "success": feedback.success,
                         "error_type": feedback.error_type,
                         "detail": feedback.detail,
-                        "stdout": result.stdout[:500],
-                        "stderr": result.stderr[:500],
+                        "stdout": result.stdout[:_MAX_MESSAGE_LENGTH],
+                        "stderr": result.stderr[:_MAX_MESSAGE_LENGTH],
                     }),
                 })
+
+                _trim_history(messages, _MAX_HISTORY_TURNS)
 
         self.task_mgr.fail_task(task_id)
         return AgentResult(task_id=task_id, status="failed", total_steps=max_steps, final_message="max steps reached")

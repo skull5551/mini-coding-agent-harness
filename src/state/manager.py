@@ -1,8 +1,28 @@
+import hashlib
+import os
 import uuid
+from base64 import b64decode, b64encode
 from datetime import datetime, timezone
 
 from src.state.database import Database
 from src.state.models import CREATE_TABLES
+
+
+def _derive_encryption_key() -> bytes:
+    secret = os.environ.get("HARNESS_SECRET_KEY", "harness-default-key")
+    return hashlib.sha256(secret.encode()).digest()
+
+
+def _encrypt(plaintext: str) -> str:
+    key = _derive_encryption_key()
+    encrypted = bytes([ord(c) ^ key[i % len(key)] for i, c in enumerate(plaintext)])
+    return b64encode(encrypted).decode()
+
+
+def _decrypt(ciphertext: str) -> str:
+    key = _derive_encryption_key()
+    encrypted = b64decode(ciphertext)
+    return "".join(chr(b ^ key[i % len(key)]) for i, b in enumerate(encrypted))
 
 
 class StateManager:
@@ -111,6 +131,7 @@ class StateManager:
 
     def save_api_key(self, provider: str, raw_key: str):
         masked = self._mask_key(raw_key)
+        encrypted = _encrypt(raw_key)
         conn = self.db.connect()
         existing = conn.execute(
             "SELECT id FROM api_keys WHERE provider = ?", (provider,)
@@ -118,13 +139,13 @@ class StateManager:
         if existing:
             conn.execute(
                 "UPDATE api_keys SET key_masked = ?, key_value = ? WHERE provider = ?",
-                (masked, raw_key, provider),
+                (masked, encrypted, provider),
             )
         else:
             key_id = str(uuid.uuid4())
             conn.execute(
                 "INSERT INTO api_keys (id, provider, key_masked, key_value) VALUES (?, ?, ?, ?)",
-                (key_id, provider, masked, raw_key),
+                (key_id, provider, masked, encrypted),
             )
         conn.commit()
 
@@ -133,7 +154,9 @@ class StateManager:
         row = conn.execute(
             "SELECT key_value FROM api_keys WHERE provider = ?", (provider,)
         ).fetchone()
-        return row["key_value"] if row else None
+        if row is None:
+            return None
+        return _decrypt(row["key_value"])
 
     def get_api_keys(self) -> list[dict]:
         conn = self.db.connect()

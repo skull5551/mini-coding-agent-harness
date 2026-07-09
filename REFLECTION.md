@@ -1,8 +1,8 @@
- REFLECTION.md — 课程反思
+﻿# REFLECTION.md — 课程反思
 
- 1. Superpowers 技能分析
+## 1. Superpowers 技能分析
 
- brainstorming 的作用
+### brainstorming 的作用
 
 在项目初期，brainstorming 技能用了 7 个步骤把我从"做一个 Coding Agent Harness"这个模糊想法引导到可执行的设计文档。如果没有这个分步引导，我大概率会直接跳到"写一个调用 LLM 的 Agent"，然后发现缺少反馈机制、缺少状态管理、缺少安全设计，最后反复返工。但是对于一个大一学生，开发经验少导致brainstorming过程非常痛苦，因为我也不太清楚到底有哪些可能的场景，必要的功能。
 

@@ -13,7 +13,7 @@ def runner(tmp_path):
 
 def test_cli_run(runner):
     r, db, ws = runner
-    result = r.invoke(app, ["--db", db, "--workspace", ws, "run", "fix the bug"])
+    result = r.invoke(app, ["run", "--db", db, "--workspace", ws, "fix the bug"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert "task_id" in data
@@ -22,9 +22,9 @@ def test_cli_run(runner):
 
 def test_cli_status(runner):
     r, db, ws = runner
-    create = r.invoke(app, ["--db", db, "--workspace", ws, "run", "test task"])
+    create = r.invoke(app, ["run", "--db", db, "--workspace", ws, "test task"])
     task_id = json.loads(create.stdout)["task_id"]
-    result = r.invoke(app, ["--db", db, "--workspace", ws, "status", task_id])
+    result = r.invoke(app, ["status", "--db", db, "--workspace", ws, task_id])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert data["id"] == task_id
@@ -32,7 +32,7 @@ def test_cli_status(runner):
 
 def test_cli_status_not_found(runner):
     r, db, ws = runner
-    result = r.invoke(app, ["--db", db, "--workspace", ws, "status", "nonexistent"])
+    result = r.invoke(app, ["status", "--db", db, "--workspace", ws, "nonexistent"])
     assert result.exit_code != 0
 
 
@@ -50,13 +50,28 @@ def test_cli_config_set_key(runner):
     assert raw == "sk-test-12345"
 
 
+def test_cli_config_set_key_hidden_input(runner):
+    r, db, ws = runner
+    result = r.invoke(
+        app,
+        ["config", "set-key", "--db", db, "--workspace", ws, "openai"],
+        input="sk-hidden-test\n",
+    )
+    assert result.exit_code == 0
+    from src.state.manager import StateManager
+    sm = StateManager(db)
+    raw = sm.get_api_key("openai")
+    assert raw == "sk-hidden-test"
+
+
 def test_cli_config_list_keys(runner):
     r, db, ws = runner
-    r.invoke(app, ["--db", db, "--workspace", ws, "config", "set-key", "openai", "sk-test"])
-    result = r.invoke(app, ["--db", db, "--workspace", ws, "config", "list-keys"])
+    set_result = r.invoke(app, ["config", "set-key", "--db", db, "--workspace", ws, "openai", "--key", "sk-test"])
+    assert set_result.exit_code == 0
+    result = r.invoke(app, ["config", "list-keys", "--db", db, "--workspace", ws])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
-    assert len(data) >= 1
+    assert len(data) == 1
     assert data[0]["provider"] == "openai"
 
 

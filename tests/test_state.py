@@ -96,3 +96,21 @@ def test_list_tasks_returns_all(tmp_path):
     mgr.create_task("task 2")
     tasks = mgr.list_tasks()
     assert len(tasks) == 2
+
+
+def test_api_key_encrypted_in_db(tmp_path):
+    db_path = tmp_path / "test.db"
+    mgr = StateManager(str(db_path))
+    raw = "sk-test-secret"
+    mgr.save_api_key("openai", raw)
+
+    conn = mgr.db.connect()
+    row = conn.execute(
+        "SELECT key_value FROM api_keys WHERE provider = ?", ("openai",)
+    ).fetchone()
+    stored = row["key_value"]
+    assert raw not in stored
+    assert stored != raw
+
+    retrieved = mgr.get_api_key("openai")
+    assert retrieved == raw
