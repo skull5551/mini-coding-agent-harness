@@ -7,27 +7,29 @@ class FeedbackAnalyzer:
         if result.exit_code == 0:
             return Feedback(success=True)
 
-        stderr_lower = result.stderr.lower()
+        combined = (result.stderr + " " + result.stdout).lower()
+        detail_source = result.stderr + result.stdout
+        detail = detail_source[-500:] if len(detail_source) > 500 else detail_source[:500]
 
-        if "fail" in stderr_lower or "assertionerror" in stderr_lower or "assert" in stderr_lower:
+        if "fail" in combined or "assertionerror" in combined:
             return Feedback(
                 success=False,
                 error_type="test_failure",
-                detail=result.stderr[:500],
+                detail=detail,
                 summary="test failure detected",
             )
 
-        if "timed out" in stderr_lower or "timeout" in stderr_lower:
+        if "timed out" in combined or "timeout" in combined:
             return Feedback(
                 success=False,
                 error_type="timeout",
-                detail=result.stderr[:500],
+                detail=detail,
                 summary="command timed out",
             )
 
         return Feedback(
             success=False,
             error_type="command_error",
-            detail=result.stderr[:500],
+            detail=detail,
             summary=f"command failed with exit code {result.exit_code}",
         )

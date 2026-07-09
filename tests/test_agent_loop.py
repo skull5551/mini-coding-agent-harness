@@ -165,3 +165,49 @@ async def test_agent_loop_retry_on_unknown_action(tmp_path):
     task_id = task_mgr.create_task("test")
     result = await loop.run(task_id, max_steps=10)
     assert result.status == "success"
+
+
+async def test_agent_loop_feedback_injection_after_tool_failure(tmp_path):
+    ws = _make_ws(tmp_path, {
+        "main.py": "def add(a, b): return a * b",
+        "test_main.py": "\n".join([
+            "import sys",
+            "sys.path.insert(0, '.')",
+            "from main import add",
+            "def test_add():",
+            "    assert add(1, 2) == 3",
+        ]),
+    })
+    test_cmd = f"pytest {ws / 'test_main.py'}"
+
+    responses = [
+        json.dumps({"action": "tool_call", "tool": "run_test", "params": {"command": test_cmd}}),
+        json.dumps({"action": "done", "reason": "fixed according to feedback"}),
+    ]
+
+    mock_llm = MockLLMProvider(responses=responses)
+    db_path = str(tmp_path / "test.db")
+    task_mgr = TaskManager(db_path, base_workspace=str(ws))
+    loop = AgentLoop(
+        llm=mock_llm,
+        tool_registry=ToolRegistry(workspace=str(ws)),
+        feedback_analyzer=FeedbackAnalyzer(),
+        task_mgr=task_mgr,
+    )
+
+    task_id = task_mgr.create_task("fix the bug")
+    result = await loop.run(task_id, max_steps=10)
+
+    assert result.status == "success"
+    assert result.total_steps == 2
+
+    assert len(mock_llm.call_history) == 2
+
+    second_call_messages = mock_llm.call_history[1]
+    feedback_content = second_call_messages[-1]["content"]
+    feedback = json.loads(feedback_content)
+
+    assert feedback["success"] is False
+    assert feedback["error_type"] == "test_failure"
+    assert "test_add" in feedback["detail"] or "test_add" in feedback["stdout"]
+    assert "AssertionError" in feedback["detail"] or "AssertionError" in feedback["stderr"]
