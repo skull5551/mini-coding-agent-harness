@@ -1,8 +1,22 @@
 import asyncio
+import re
 
 from src.tools.base import BaseTool, ToolResult
 
 _COMMAND_TIMEOUT = 120
+
+_DANGEROUS_COMMAND_PATTERNS = [
+    (re.compile(r'rm\s+-[rf]+', re.IGNORECASE), "rm -rf / -fr"),
+    (re.compile(r'curl\s+.*\|\s*sh', re.IGNORECASE), "curl | sh"),
+    (re.compile(r'wget\s+.*\|\s*sh', re.IGNORECASE), "wget | sh"),
+]
+
+
+def _is_safe_command(command: str) -> bool:
+    for pattern, _name in _DANGEROUS_COMMAND_PATTERNS:
+        if pattern.search(command):
+            return False
+    return True
 
 
 class ExecuteCommandTool(BaseTool):
@@ -10,6 +24,8 @@ class ExecuteCommandTool(BaseTool):
         command = params.get("command", "")
         if not command:
             return ToolResult(stderr="no command provided", exit_code=1)
+        if not _is_safe_command(command):
+            return ToolResult(stderr="dangerous command blocked", exit_code=1)
         try:
             proc = await asyncio.create_subprocess_shell(
                 command,

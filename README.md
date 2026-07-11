@@ -97,21 +97,21 @@ docker run -p 8000:8000 -e HARNESS_API_KEY_OPENAI=sk-xxx mini-coding-agent
 pytest tests/
 ```
 
-当前测试结果：**80/80 全部通过**
+当前测试结果：**88/88 全部通过**
 
 ### 测试覆盖
 
 | 测试文件 | 数量 | 覆盖内容 |
 |----------|------|---------|
 | `test_llm.py` | 5 | MockLLMProvider 预设响应、抽象接口 |
-| `test_tools.py` | 11 | 文件读写、命令执行、路径遍历防护、ToolRegistry |
+| `test_tools.py` | 15 | 文件读写、命令执行、路径遍历防护、ToolRegistry、危险命令拦截 |
 | `test_feedback.py` | 6 | FeedbackAnalyzer 成功/失败/超时分类 |
-| `test_state.py` | 11 | SQLite CRUD、Task/Step/ToolCall/ApiKey、加密存储验证 |
+| `test_state.py` | 13 | SQLite CRUD、Task/Step/ToolCall/ApiKey、加密存储验证、密钥缺失报错 |
 | `test_task.py` | 8 | TaskManager 生命周期、workspace 管理 |
 | `test_agent_loop.py` | 12 | Agent Loop 完整流程、超步数终止、错误恢复、反馈闭环、工具异常保护、消息截断 |
 | `test_litellm_provider.py` | 8 | LiteLLMProvider Mock 测试 |
-| `test_api.py` | 8 | FastAPI REST 端点集成测试 |
-| `test_cli.py` | 7 | Typer CLI 命令测试、隐藏输入验证 |
+| `test_api.py` | 9 | FastAPI REST 端点集成测试、任务执行端点 |
+| `test_cli.py` | 8 | Typer CLI 命令测试、隐藏输入验证、无 API key 报错 |
 | `test_e2e.py` | 4 | 端到端：Agent Loop + API + 反馈闭环 |
 
 ### Mock LLM 测试
