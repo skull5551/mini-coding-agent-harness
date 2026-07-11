@@ -9,7 +9,12 @@ from src.state.models import CREATE_TABLES
 
 
 def _derive_encryption_key() -> bytes:
-    secret = os.environ.get("HARNESS_SECRET_KEY", "harness-default-key")
+    secret = os.environ.get("HARNESS_SECRET_KEY")
+    if not secret:
+        raise ValueError(
+            "HARNESS_SECRET_KEY environment variable is required. "
+            "Set it before using API key management."
+        )
     return hashlib.sha256(secret.encode()).digest()
 
 

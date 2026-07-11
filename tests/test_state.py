@@ -114,3 +114,18 @@ def test_api_key_encrypted_in_db(tmp_path):
 
     retrieved = mgr.get_api_key("openai")
     assert retrieved == raw
+
+
+def test_encryption_roundtrip(tmp_path):
+    db_path = tmp_path / "test.db"
+    mgr = StateManager(str(db_path))
+    mgr.save_api_key("openai", "sk-secret-key-123")
+    assert mgr.get_api_key("openai") == "sk-secret-key-123"
+
+
+def test_no_secret_key_raises_error(tmp_path, monkeypatch):
+    monkeypatch.delenv("HARNESS_SECRET_KEY", raising=False)
+    db_path = tmp_path / "test.db"
+    mgr = StateManager(str(db_path))
+    with pytest.raises(ValueError, match="HARNESS_SECRET_KEY"):
+        mgr.save_api_key("openai", "sk-test")

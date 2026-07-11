@@ -1,3 +1,4 @@
+import json
 import pytest
 from fastapi.testclient import TestClient
 from src.api.main import create_app
@@ -76,3 +77,23 @@ def test_delete_api_key(client):
     assert response.status_code == 200
     keys = client.get("/api/config/keys").json()
     assert len(keys) == 0
+
+
+def test_run_task(client):
+    create_resp = client.post("/api/tasks", json={"description": "fix the bug"})
+    task_id = create_resp.json()["task_id"]
+    client.post("/api/config/keys", json={"provider": "openai", "key": "sk-test-key"})
+
+    from unittest.mock import patch, MagicMock
+    mock_llm = MagicMock()
+    mock_llm.chat.return_value = json.dumps({"action": "done", "reason": "completed"})
+
+    with patch("src.api.routes.tasks.LiteLLMProvider", return_value=mock_llm):
+        response = client.post(f"/api/tasks/{task_id}/run", json={"provider": "openai", "model": "gpt-4o"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["task_id"] == task_id
+    assert data["status"] == "success"
+    assert data["total_steps"] == 1
+    assert "final_message" in data

@@ -13,17 +13,41 @@ def runner(tmp_path):
 
 def test_cli_run(runner):
     r, db, ws = runner
-    result = r.invoke(app, ["run", "--db", db, "--workspace", ws, "fix the bug"])
+    from src.state.manager import StateManager
+    sm = StateManager(db)
+    sm.save_api_key("openai", "sk-test-key")
+
+    from unittest.mock import patch, MagicMock
+    mock_llm = MagicMock()
+    mock_llm.chat.return_value = json.dumps({"action": "done", "reason": "completed"})
+
+    with patch("src.cli.main.LiteLLMProvider", return_value=mock_llm):
+        result = r.invoke(app, [
+            "run", "--db", db, "--workspace", ws,
+            "--provider", "openai", "fix the bug"
+        ])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert "task_id" in data
-    assert data["status"] == "pending"
+    assert data["status"] == "success"
+    assert "total_steps" in data
+
+
+def test_cli_run_no_api_key(runner):
+    r, db, ws = runner
+    result = r.invoke(app, [
+        "run", "--db", db, "--workspace", ws,
+        "--provider", "openai", "fix the bug"
+    ])
+    assert result.exit_code != 0
+    assert "API key" in result.stdout
 
 
 def test_cli_status(runner):
     r, db, ws = runner
-    create = r.invoke(app, ["run", "--db", db, "--workspace", ws, "test task"])
-    task_id = json.loads(create.stdout)["task_id"]
+    from src.state.manager import StateManager
+    sm = StateManager(db)
+    task_id = sm.create_task("test task")
     result = r.invoke(app, ["status", "--db", db, "--workspace", ws, task_id])
     assert result.exit_code == 0
     data = json.loads(result.stdout)

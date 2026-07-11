@@ -1,7 +1,12 @@
+import asyncio
 import json
 import typer
-from src.task.manager import TaskManager
+from src.agent.loop import AgentLoop
+from src.feedback.analyzer import FeedbackAnalyzer
+from src.llm.litellm_provider import LiteLLMProvider
 from src.state.manager import StateManager
+from src.task.manager import TaskManager
+from src.tools.registry import ToolRegistry
 
 app = typer.Typer()
 config_app = typer.Typer()
@@ -21,11 +26,35 @@ def run(
     description: str,
     db: str = _DB_OPTION,
     workspace: str = _WS_OPTION,
+    model: str = typer.Option("gpt-4o", "--model", help="LLM model name"),
+    provider: str = typer.Option("openai", "--provider", help="LLM provider name"),
 ):
-    tm, _ = _resolve(db, workspace)
+    tm, sm = _resolve(db, workspace)
     task_id = tm.create_task(description)
     task = tm.get_task(task_id)
-    typer.echo(json.dumps({"task_id": task_id, "status": task["status"]}))
+
+    api_key = sm.get_api_key(provider)
+    if not api_key:
+        typer.echo(f"Error: No API key configured for provider '{provider}'. Use 'config set-key' first.")
+        raise typer.Exit(code=1)
+
+    llm = LiteLLMProvider(model=model, api_key=api_key)
+    tool_registry = ToolRegistry(workspace=task["workspace_path"])
+    feedback_analyzer = FeedbackAnalyzer()
+    loop = AgentLoop(
+        llm=llm,
+        tool_registry=tool_registry,
+        feedback_analyzer=feedback_analyzer,
+        task_mgr=tm,
+    )
+
+    result = asyncio.run(loop.run(task_id))
+    typer.echo(json.dumps({
+        "task_id": task_id,
+        "status": result.status,
+        "total_steps": result.total_steps,
+        "final_message": result.final_message,
+    }))
 
 
 @app.command()
