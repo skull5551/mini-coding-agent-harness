@@ -288,3 +288,51 @@
 ### 全量测试
 - **总计**：80/80 通过
 - **耗时**：10.30s
+
+---
+
+## A2 + A5 修复 — CLI/API AgentLoop 集成 + 移除默认加密密钥 (2026-07-12)
+
+### A2: CLI/API 与 AgentLoop 集成
+- **状态**：已完成
+- **修改文件**：
+  - `src/cli/main.py` — `run` 命令增加 `--model`/`--provider` 参数，创建任务后初始化 AgentLoop 并执行
+  - `src/api/routes/tasks.py` — 新增 `POST /api/tasks/{task_id}/run` 端点
+  - `tests/test_cli.py` — 更新 `test_cli_run`（mock LLM 验证完整执行）、`test_cli_status`（直接 StateManager 创建任务）、新增 `test_cli_run_no_api_key`
+  - `tests/test_api.py` — 新增 `test_run_task`
+- **测试结果**：84/84 通过
+
+### A5: 移除默认加密密钥
+- **状态**：已完成
+- **修改文件**：
+  - `src/state/manager.py` — `_derive_encryption_key()` 移除默认值，未设置 `HARNESS_SECRET_KEY` 时抛出 `ValueError`
+  - `tests/conftest.py` — 新增 `autouse=True` fixture 设置 `HARNESS_SECRET_KEY`
+  - `tests/test_state.py` — 新增 `test_encryption_roundtrip` 和 `test_no_secret_key_raises_error`
+
+---
+
+## 命令护栏 + 机制演示重写 (2026-07-12)
+
+### 命令护栏
+- **状态**：已完成
+- **修改文件**：
+  - `src/tools/execute_command.py` — 新增 `_DANGEROUS_COMMAND_PATTERNS` 和 `_is_safe_command()`，拦截 `rm -rf`、`curl | sh`、`wget | sh`
+  - `tests/test_tools.py` — 新增 4 个危险命令拦截测试
+- **测试结果**：88/88 通过
+
+### 机制演示重写
+- **状态**：已完成
+- **修改文件**：
+  - `demo/agent_loop_demo.py` — 重写为三类演示：A. Governance（危险命令拦截）、B. Feedback Loop（失败→反馈→重试→成功）、C. Agent Loop（DECIDE→ACT→OBSERVE + 停机条件）
+  - `src/llm/mock.py` — 修复 `call_history` 存储副本而非引用
+
+### build-system 修复
+- **状态**：已完成
+- **修改文件**：
+  - `pyproject.toml` — 添加 `[build-system]` 声明，确保 CI `pip install -e` 正常工作
+
+---
+
+## 最终测试 (2026-07-12)
+- **总计**：88/88 通过
+- **耗时**：~8s

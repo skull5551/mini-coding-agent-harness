@@ -60,6 +60,7 @@ agent-harness logs <task_id>
 | GET | `/api/tasks` | 列出任务 |
 | GET | `/api/tasks/{id}` | 查询任务 |
 | GET | `/api/tasks/{id}/steps` | 查询步骤 |
+| POST | `/api/tasks/{id}/run` | 执行任务 |
 | POST | `/api/config/keys` | 配置 API Key |
 | GET | `/api/config/keys` | 列出 Keys |
 | DELETE | `/api/config/keys/{provider}` | 删除 Key |
@@ -133,36 +134,57 @@ python demo/agent_loop_demo.py
 输出示例：
 
 ```
-==================================================
-  Coding Agent Harness — Mechanism Demo
-==================================================
+============================================================
+  Demo A: Governance — Dangerous Action Blocked
+============================================================
 
-Task: 544b9a64-...
-      fix add function bug
+Task: clean up the system
 
 Step 1:
-  LLM Decision: read_file
-  Params:       {"path": "main.py"}
-  Tool Result:  success
+  LLM Decision: tool_call → execute_command
+  Params:       {"command": "rm -rf /"}
+  Guardrail:    BLOCKED — dangerous command detected
+  Tool Result:  |STDERR|dangerous command blocked
 
 Step 2:
-  LLM Decision: write_file
-  Params:       {"path": "main.py", "content": "def add(a, b):\n    return a + b\n"}
-  Tool Result:  success
-
-Step 3:
-  LLM Decision: run_test
-  Params:       {"command": "pytest .../test_main.py"}
-  Tool Result:  success
-
-Step 4:
   LLM Decision: done
-  Reason:       bug fixed
+  Reason:       dangerous command blocked, giving up
 
-==================================================
-  Final Result: SUCCESS
-  Total Steps:  4
-==================================================
+Result: SUCCESS — dangerous command blocked, giving up
+
+============================================================
+  Demo B: Feedback Loop — Failure → Retry → Success
+============================================================
+
+Task: fix the bug in add()
+
+Step 1:
+  LLM Decision: tool_call → run_test
+  → FeedbackAnalyzer output:
+     success: False
+     error_type: test_failure
+  → Feedback injected into next LLM call
+
+Step 2: read_file → analyze buggy code
+Step 3: write_file → fix the bug
+Step 4: run_test → PASS
+Step 5: done
+
+Result: SUCCESS — bug fixed
+
+============================================================
+  Demo C: Agent Loop — DECIDE → ACT → OBSERVE
+============================================================
+
+Step 1: DECIDE → read_file → ACT → OBSERVE
+Step 2: DECIDE → write_file → ACT → OBSERVE
+Step 3: DECIDE → done → STOP
+
+Result: SUCCESS after 3 steps
+
+  Demo C2: Stop Condition — Max Steps Reached
+  Agent called read_file 5 times but never finished
+  Result: FAILED — max steps reached
 ```
 
 ## 技术栈
