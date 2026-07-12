@@ -88,7 +88,8 @@ def test_run_task(client):
     mock_llm = MagicMock()
     mock_llm.chat.return_value = json.dumps({"action": "done", "reason": "completed"})
 
-    with patch("src.api.routes.tasks.LiteLLMProvider", return_value=mock_llm):
+    with patch("src.api.routes.tasks.LiteLLMProvider", return_value=mock_llm), \
+         patch("src.llm.litellm_provider.litellm", MagicMock()):
         response = client.post(f"/api/tasks/{task_id}/run", json={"provider": "openai", "model": "gpt-4o"})
 
     assert response.status_code == 200
